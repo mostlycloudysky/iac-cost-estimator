@@ -10,11 +10,31 @@ Globals:
   Function:
     Timeout: 3
     MemorySize: 128
-
     Tracing: Active
   Api:
     TracingEnabled: true
 Resources:
+  ApiCertificate:
+    Type: AWS::CertificateManager::Certificate
+    Properties:
+      DomainName: api.cost-estimator.cloudysky.link
+      ValidationMethod: DNS
+
+  ApiGatewayApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: prod
+      Cors: "'*'"
+      Domain:
+        DomainName: api.cost-estimator.cloudysky.link
+        CertificateArn: !Ref ApiCertificate
+        EndpointConfiguration: EDGE
+        Route53:
+          HostedZoneId: Z01798246FUPJEQVEZR8
+      Auth:
+        ApiKeyRequired: true # sets for all methods
+        UsagePlan:
+          CreateUsagePlan: PER_API
   HelloWorldFunction:
     Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
     Properties:
@@ -29,6 +49,8 @@ Resources:
           Properties:
             Path: /hello
             Method: get
+            RestApiId: 
+              Ref: ApiGatewayApi
 
   ApplicationResourceGroup:
     Type: AWS::ResourceGroups::Group
@@ -49,7 +71,7 @@ Outputs:
   # https://github.com/awslabs/serverless-application-model/blob/master/docs/internals/generated_resources.rst#api
   HelloWorldApi:
     Description: API Gateway endpoint URL for Prod stage for Hello World function
-    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/hello/"
+    Value: !Sub "https://${ApiGatewayApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/hello/"
   HelloWorldFunction:
     Description: Hello World Lambda Function ARN
     Value: !GetAtt HelloWorldFunction.Arn
