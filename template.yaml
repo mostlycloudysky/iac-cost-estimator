@@ -28,10 +28,6 @@ Resources:
         EndpointConfiguration: EDGE
         Route53:
           HostedZoneId: Z01798246FUPJEQVEZR8
-      # Auth:
-      #   ApiKeyRequired: true # sets for all methods
-      #   UsagePlan:
-      #     CreateUsagePlan: PER_API
   IacCostEstimatorFunction:
     Type: AWS::Serverless::Function 
     Properties:
