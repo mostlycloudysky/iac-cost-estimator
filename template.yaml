@@ -28,13 +28,12 @@ Resources:
         EndpointConfiguration: EDGE
         Route53:
           HostedZoneId: Z01798246FUPJEQVEZR8
-      # Auth:
-      #   ApiKeyRequired: true # sets for all methods
-      #   UsagePlan:
-      #     CreateUsagePlan: PER_API
   IacCostEstimatorFunction:
     Type: AWS::Serverless::Function 
     Properties:
+      Environment:
+        Variables:
+          GITHUB_WEBHOOK_SECRET: !Sub "{{resolve:ssm:/github/webhook-secret:1}}"
       CodeUri: iac_cost_estimator/
       Handler: app.lambda_handler
       Runtime: python3.9
@@ -48,6 +47,7 @@ Resources:
             Method: post
             RestApiId: 
               Ref: ApiGatewayApi
+      
 
   ApplicationResourceGroup:
     Type: AWS::ResourceGroups::Group
