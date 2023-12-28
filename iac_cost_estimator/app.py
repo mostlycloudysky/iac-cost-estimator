@@ -19,9 +19,7 @@ def validate_github_signature(event):
     return hmac.compare_digest(mac.hexdigest(), signature)
 
 
-# log the event and return the event in the response
 def lambda_handler(event, context):
-    # Validate github webhook signature
     if not validate_github_signature(event):
         return {"statusCode": 403, "body": "Invalid signature"}
 

@@ -11,6 +11,12 @@ Globals:
   Api:
     TracingEnabled: true
 Resources:
+  IacSQSQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: iac-cost-estimator-queue
+      VisibilityTimeout: 300
+      ReceiveMessageWaitTimeSeconds: 20
   ApiCertificate:
     Type: AWS::CertificateManager::Certificate
     Properties:
@@ -47,7 +53,9 @@ Resources:
             Method: post
             RestApiId: 
               Ref: ApiGatewayApi
-      
+      Policies: 
+        - SQSSendMessagePolicy:
+            QueueName: !GetAtt IacSQSQueue.QueueName
 
   ApplicationResourceGroup:
     Type: AWS::ResourceGroups::Group
@@ -62,6 +70,8 @@ Resources:
       ResourceGroupName:
         Ref: ApplicationResourceGroup
       AutoConfigurationEnabled: 'true'
+
+
 Outputs:
   IacCostEstimatorApi:
     Description: API Gateway endpoint URL for Prod stage for Hello World function
