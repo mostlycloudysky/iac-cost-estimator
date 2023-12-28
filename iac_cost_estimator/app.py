@@ -3,6 +3,7 @@ import json
 import hmac
 import hashlib
 import os
+import requests
 
 
 # Validate the GitHub webhook signature
@@ -21,6 +22,22 @@ def validate_github_signature(event):
     return hmac.compare_digest(mac.hexdigest(), signature)
 
 
+def fetch_file_content(raw_url):
+    response = requests.get(raw_url)
+    if response.status_code != 200:
+        return None
+    return response.text
+
+
+def is_cloudformation_template(filename, raw_url):
+    if not filename.endswith((".yaml", ".yml", ".json")):
+        return False
+    file_content = fetch_file_content(raw_url)
+    if not file_content:
+        return False
+    return "AWSTemplateFormatVersion" in file_content
+
+
 def extract_push_event_data(webhook_payload):
     details = {"commit_sha": webhook_payload["head_commit"]["id"], "changes": []}
 
@@ -30,17 +47,21 @@ def extract_push_event_data(webhook_payload):
             + commit.get("modified", [])
             + commit.get("removed", [])
         ):
-            file_data = {
-                "filename": filename,
-                "status": "added"
-                if filename in commit.get("added", [])
-                else "modified"
-                if filename in commit.get("modified", [])
-                else "removed",
-                "raw_url": f"https://raw.githubusercontent.com/{webhook_payload['repository']['full_name']}/{details['commit_sha']}/{filename}",
-            }
+            # Check file if cloudformation template
+            raw_url = f"https://raw.githubusercontent.com/{webhook_payload['repository']['full_name']}/{details['commit_sha']}/{filename}"
 
-            details["changes"].append(file_data)
+            if is_cloudformation_template(filename, raw_url):
+                file_data = {
+                    "filename": filename,
+                    "status": "added"
+                    if filename in commit.get("added", [])
+                    else "modified"
+                    if filename in commit.get("modified", [])
+                    else "removed",
+                    "raw_url": f"https://raw.githubusercontent.com/{webhook_payload['repository']['full_name']}/{details['commit_sha']}/{filename}",
+                    "file_type": "cloudformation",
+                }
+                details["changes"].append(file_data)
     return details
 
 
