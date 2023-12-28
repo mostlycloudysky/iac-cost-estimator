@@ -11,6 +11,12 @@ Globals:
   Api:
     TracingEnabled: true
 Resources:
+  IacSQSQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: iac-cost-estimator-queue
+      VisibilityTimeout: 300
+      ReceiveMessageWaitTimeSeconds: 20
   ApiCertificate:
     Type: AWS::CertificateManager::Certificate
     Properties:
@@ -34,6 +40,7 @@ Resources:
       Environment:
         Variables:
           GITHUB_WEBHOOK_SECRET: !Sub "{{resolve:ssm:/github/webhook-secret:1}}"
+          SQS_QUEUE_URL: !Sub "{{resolve:ssm:/iac/sqs/url:1}}"
       CodeUri: iac_cost_estimator/
       Handler: app.lambda_handler
       Runtime: python3.9
@@ -47,7 +54,9 @@ Resources:
             Method: post
             RestApiId: 
               Ref: ApiGatewayApi
-      
+      Policies: 
+        - SQSSendMessagePolicy:
+            QueueName: !GetAtt IacSQSQueue.QueueName
 
   ApplicationResourceGroup:
     Type: AWS::ResourceGroups::Group
@@ -62,6 +71,8 @@ Resources:
       ResourceGroupName:
         Ref: ApplicationResourceGroup
       AutoConfigurationEnabled: 'true'
+
+
 Outputs:
   IacCostEstimatorApi:
     Description: API Gateway endpoint URL for Prod stage for Hello World function
