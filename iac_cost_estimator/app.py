@@ -47,6 +47,7 @@ def extract_push_event_data(webhook_payload):
 def send_to_sqs(push_event_data):
     sqs = boto3.client("sqs")
     queue_url = os.environ.get("SQS_QUEUE_URL")
+    print("Sending to SQS:", json.dumps(push_event_data))
     sqs.send_message(QueueUrl=queue_url, MessageBody=json.dumps(push_event_data))
 
 
