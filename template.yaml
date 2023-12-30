@@ -58,6 +58,23 @@ Resources:
         - SQSSendMessagePolicy:
             QueueName: !GetAtt IacSQSQueue.QueueName
 
+  SQSProcessorStepFunctionInitFunction:
+    Type: AWS::Serverless::Function 
+    Properties:
+      Environment:
+        Variables:
+          SQS_QUEUE_URL: !Sub "{{resolve:ssm:/iac/sqs/url:1}}"
+      CodeUri: sqs_processor_state_machine_init/
+      Handler: app.lambda_handler
+      Runtime: python3.9
+      Architectures:
+      - x86_64
+      Events:
+        MyQueueEvent:
+          Type: SQS
+          Properties:
+            Queue: !GetAtt IacSQSQueue.Arn
+            BatchSize: 10
   ApplicationResourceGroup:
     Type: AWS::ResourceGroups::Group
     Properties:
