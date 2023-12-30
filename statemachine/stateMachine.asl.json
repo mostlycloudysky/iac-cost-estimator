@@ -1,0 +1,41 @@
+{
+    "StartAt": "DetermineIaCType",
+    "States": {
+    "DetermineIaCType": {
+        "Type": "Task",
+        "Resource": "${DetermineIaCTypeFunctionArn}",
+        "Next": "IaCTypeChoice"
+    },
+    "IaCTypeChoice": {
+        "Type": "Choice",
+        "Choices": [
+        {
+            "Variable": "$.iacType",
+            "StringEquals": "cloudformation",
+            "Next": "ProcessCloudFormation"
+        },
+        {
+            "Variable": "$.iacType",
+            "StringEquals": "terraform",
+            "Next": "ProcessTerraform"
+        }
+        ],
+        "Default": "UnknownType"
+    },
+    "ProcessCloudFormation": {
+        "Type": "Task",
+        "Resource": "${ProcessCloudformationFunctionArn}",
+        "End": true
+    },
+    "ProcessTerraform": {
+        "Type": "Task",
+        "Resource": "${ProcessTerraformFunctionArn}",
+        "End": true
+    },
+    "UnknownType": {
+        "Type": "Fail",
+        "Error": "UnknownType",
+        "Cause": "The IaC type is unknown."
+    }
+    }
+}
