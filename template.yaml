@@ -64,11 +64,15 @@ Resources:
       Environment:
         Variables:
           SQS_QUEUE_URL: !Sub "{{resolve:ssm:/iac/sqs/url:1}}"
+          STATE_MACHINE_ARN: !GetAtt StateMachine.Arn
       CodeUri: sqs_processor_state_machine_init/
       Handler: app.lambda_handler
       Runtime: python3.9
       Architectures:
       - x86_64
+      Policies: 
+        - StepFunctionsExecutionPolicy:
+            StateMachineName: !GetAtt StateMachine.Name
       Events:
         MyQueueEvent:
           Type: SQS
@@ -124,7 +128,7 @@ Resources:
   StateMachineLogGroup:
     Type: AWS::Logs::LogGroup
     Properties:
-      LogGroupName: !Join [ "/", [ "stepfunctions", StateMachine]]
+      LogGroupName: !Join [ "/", [ "IacCostEstimator", StateMachine]]
 
   DetermineIaCTypeFunction:
     Type: AWS::Serverless::Function 
@@ -134,9 +138,6 @@ Resources:
       Runtime: python3.9
       Architectures:
       - x86_64
-      Policies: 
-        - SQSReceiveMessagePolicy:
-            QueueName: !GetAtt IacSQSQueue.QueueName
 
   ProcessCloudformationFunction:
     Type: AWS::Serverless::Function 
@@ -146,13 +147,6 @@ Resources:
       Runtime: python3.9
       Architectures:
       - x86_64
-      Policies: 
-        - SQSReceiveMessagePolicy:
-            QueueName: !GetAtt IacSQSQueue.QueueName
-        - S3ReadPolicy:
-            BucketName: !Sub "{{resolve:ssm:/iac/s3/bucket:1}}"
-        - S3WritePolicy:
-            BucketName: !Sub "{{resolve:ssm:/iac/s3/bucket:1}}"
 
   ProcessTerraformFunction:
     Type: AWS::Serverless::Function 
@@ -162,14 +156,7 @@ Resources:
       Runtime: python3.9
       Architectures:
       - x86_64
-      Policies: 
-        - SQSReceiveMessagePolicy:
-            QueueName: !GetAtt IacSQSQueue.QueueName
-        - S3ReadPolicy:
-            BucketName: !Sub "{{resolve:ssm:/iac/s3/bucket:1}}"
-        - S3WritePolicy:
-            BucketName: !Sub "{{resolve:ssm:/iac/s3/bucket:1}}"
-            
+
   ApplicationResourceGroup:
     Type: AWS::ResourceGroups::Group
     Properties:
