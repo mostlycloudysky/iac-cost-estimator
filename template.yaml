@@ -64,17 +64,99 @@ Resources:
       Environment:
         Variables:
           SQS_QUEUE_URL: !Sub "{{resolve:ssm:/iac/sqs/url:1}}"
+          STATE_MACHINE_ARN: !GetAtt StateMachine.Arn
       CodeUri: sqs_processor_state_machine_init/
       Handler: app.lambda_handler
       Runtime: python3.9
       Architectures:
       - x86_64
+      Policies: 
+        - StepFunctionsExecutionPolicy:
+            StateMachineName: !GetAtt StateMachine.Name
       Events:
         MyQueueEvent:
           Type: SQS
           Properties:
             Queue: !GetAtt IacSQSQueue.Arn
             BatchSize: 10
+  StateMachine:
+    Type: AWS::Serverless::StateMachine
+    Properties:
+      DefinitionUri: statemachine/stateMachine.asl.json
+      DefinitionSubstitutions:
+        DetermineIaCTypeFunctionArn: !GetAtt DetermineIaCTypeFunction.Arn
+        ProcessCloudformationFunctionArn: !GetAtt ProcessCloudformationFunction.Arn
+        ProcessTerraformFunctionArn: !GetAtt ProcessTerraformFunction.Arn
+      Role:
+        Fn::GetAtt: [ StatesExecutionRole, Arn ]
+      Logging:
+        Destinations:
+          - CloudWatchLogsLogGroup:
+              LogGroupArn: !GetAtt StateMachineLogGroup.Arn
+        IncludeExecutionData: false
+        Level: 'ALL'  
+  StatesExecutionRole:
+    Type: "AWS::IAM::Role"
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: "Allow"
+            Principal:
+              Service:
+                - !Sub states.${AWS::Region}.amazonaws.com
+            Action: "sts:AssumeRole"
+      Path: "/"
+      Policies:
+        - PolicyName: LambdaExecute
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - "lambda:InvokeFunction"
+                Resource: 
+                  - !GetAtt DetermineIaCTypeFunction.Arn
+                  - !GetAtt ProcessCloudformationFunction.Arn
+                  - !GetAtt ProcessTerraformFunction.Arn
+              - Effect: Allow
+                Action:
+                  - "cloudwatch:*"
+                  - "logs:*"
+                Resource: "*"
+    
+  StateMachineLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Join [ "/", [ "IacCostEstimator", StateMachine]]
+
+  DetermineIaCTypeFunction:
+    Type: AWS::Serverless::Function 
+    Properties:
+      CodeUri: determine_iac_type/
+      Handler: app.lambda_handler
+      Runtime: python3.9
+      Architectures:
+      - x86_64
+
+  ProcessCloudformationFunction:
+    Type: AWS::Serverless::Function 
+    Properties:
+      CodeUri: process_cloudformation/
+      Handler: app.lambda_handler
+      Runtime: python3.9
+      Architectures:
+      - x86_64
+
+  ProcessTerraformFunction:
+    Type: AWS::Serverless::Function 
+    Properties:
+      CodeUri: process_terraform/
+      Handler: app.lambda_handler
+      Runtime: python3.9
+      Architectures:
+      - x86_64
+
   ApplicationResourceGroup:
     Type: AWS::ResourceGroups::Group
     Properties:
@@ -95,8 +177,8 @@ Outputs:
     Description: API Gateway endpoint URL for Prod stage for Hello World function
     Value: https://api.cost-estimator.cloudysky.link/prod/
   IacCostEstimatorFunction:
-    Description: Hello World Lambda Function ARN
+    Description: IaC Cost Estimator Function ARN
     Value: !GetAtt IacCostEstimatorFunction.Arn
   IacCostEstimatorFunctionIamRole:
-    Description: Implicit IAM Role created for Hello World function
+    Description: Implicit IAM Role created for IaC Cost Estimator function
     Value: !GetAtt IacCostEstimatorFunctionRole.Arn
