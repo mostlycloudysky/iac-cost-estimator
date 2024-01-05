@@ -1,5 +1,8 @@
 import json
 import requests
+import boto3
+
+bedrock = boto3.client(service_name="bedrock-runtime")
 
 
 def get_data_from_url(url):
@@ -15,9 +18,28 @@ def lambda_handler(event, context):
         for change in event["changes"]:
             raw_url = change["raw_url"]
             data = get_data_from_url(raw_url)
-            print("Downloaded data from URL", data)
+
+            body = json.dumps(
+                {
+                    "prompt": "Tell me a joke about opentelemetry",
+                    "max_tokens": 200,
+                    "temperature": 0.5,
+                    "p": 0.5,
+                }
+            )
+
+            model_id = "cohere.command-text-v14"
+            accept = "application/json"
+            content_type = "application/json"
+
+            response = bedrock.invoke_model(
+                body=body, modelId=model_id, accept=accept, contentType=content_type
+            )
+            print(response)
+            response_body = json.loads(response.get("body").read())
+            print(response_body)
 
     return {
         "statusCode": 200,
-        "body": json.dumps("Sucessfully processed cloudformation"),
+        "body": json.dumps({"generated-text": response_body}),
     }
