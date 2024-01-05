@@ -147,7 +147,32 @@ Resources:
       Runtime: python3.9
       Architectures:
       - x86_64
-
+      Policies:
+        - Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Action: 
+                - "bedrock:PutUseCaseForModelAccess"
+                - "bedrock:GetUseCaseForModelAccess"
+                - "bedrock:DeleteFoundationModelAgreement"
+                - "bedrock:CreateAgent"
+                - "bedrock:GetFoundationModelAvailability"
+                - "bedrock:GetModelInvocationLoggingConfiguration"
+                - "bedrock:ListFoundationModelAgreementOffers"
+                - "bedrock:AssociateThirdPartyKnowledgeBase"
+                - "bedrock:DeleteModelInvocationLoggingConfiguration"
+                - "bedrock:ListKnowledgeBases"
+                - "bedrock:PutFoundationModelEntitlement"
+                - "bedrock:ListModelCustomizationJobs"
+                - "bedrock:ListAgents"
+                - "bedrock:ListProvisionedModelThroughputs"
+                - "bedrock:ListCustomModels"
+                - "bedrock:CreateKnowledgeBase"
+                - "bedrock:PutModelInvocationLoggingConfiguration"
+                - "bedrock:ListFoundationModels"
+                - "bedrock:CreateFoundationModelAgreement"
+                - "bedrock:InvokeModel"
+              Resource: "*"
   ProcessTerraformFunction:
     Type: AWS::Serverless::Function 
     Properties:
