@@ -147,6 +147,8 @@ Resources:
       Runtime: python3.9
       Architectures:
       - x86_64
+      MemorySize: 1024
+      Timeout: 900
       Policies:
         - Version: '2012-10-17'
           Statement:
