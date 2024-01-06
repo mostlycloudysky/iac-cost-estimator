@@ -39,15 +39,16 @@ def lambda_handler(event, context):
             response = bedrock.invoke_model(
                 body=body, modelId=model_id, accept=accept, contentType=content_type
             )
-            print(response)
-            response = response.get("body").replace("\n", "").strip()
+
             response_body = json.loads(response.get("body").read())
+            print("response_body: ", response_body)
             text_object = response_body["generations"][0]["text"]
-            response = text_object.replace("```json", "").replace("```", "").strip()
-            response_json = json.loads(response)
-            response = json.dumps(response_json, indent=4)
+            formatted_text = (
+                text_object.replace("```json", "").replace("```", "").strip()
+            )
+            response_json = json.loads(formatted_text)
 
     return {
         "statusCode": 200,
-        "body": response,
+        "body": response_json,
     }
