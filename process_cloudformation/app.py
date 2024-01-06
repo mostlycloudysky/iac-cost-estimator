@@ -18,15 +18,19 @@ def lambda_handler(event, context):
         for change in event["changes"]:
             raw_url = change["raw_url"]
             data = get_data_from_url(raw_url)
+            print(data)
 
             body = json.dumps(
                 {
-                    "prompt": "Tell me a joke about opentelemetry",
-                    "max_tokens": 200,
-                    "temperature": 0.5,
-                    "p": 0.5,
+                    "prompt": "Output list of JSON array format for the AWS resources types in the format AWS::Serverless::Function, AWS::IAM::Role etc. and list should include all the resource type defined in the template:\n"
+                    + data,
+                    "max_tokens": 400,
+                    "temperature": 0.75,
+                    "p": 0.01,
+                    "k": 0,
                 }
             )
+            print("body: ", body)
 
             model_id = "cohere.command-text-v14"
             accept = "application/json"
@@ -35,11 +39,16 @@ def lambda_handler(event, context):
             response = bedrock.invoke_model(
                 body=body, modelId=model_id, accept=accept, contentType=content_type
             )
-            print(response)
+
             response_body = json.loads(response.get("body").read())
-            print(response_body)
+            print("response_body: ", response_body)
+            text_object = response_body["generations"][0]["text"]
+            formatted_text = (
+                text_object.replace("```json", "").replace("```", "").strip()
+            )
+            response_json = json.loads(formatted_text)
 
     return {
         "statusCode": 200,
-        "body": json.dumps({"generated-text": response_body}),
+        "body": response_json,
     }
