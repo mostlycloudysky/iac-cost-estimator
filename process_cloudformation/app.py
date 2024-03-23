@@ -47,6 +47,16 @@ def lambda_handler(event, context):
                 text_object.replace("```json", "").replace("```", "").strip()
             )
             response_json = json.loads(formatted_text)
+            # {
+            #     "statusCode": 200,
+            #     "body": [
+            #         "AWS::CertificateManager::Certificate",
+            #         "AWS::Serverless::Api",
+            #         "AWS::Serverless::Function",
+            #         "AWS::ResourceGroups::Group",
+            #         "AWS::ApplicationInsights::Application",
+            #     ],
+            # }
 
     return {
         "statusCode": 200,
